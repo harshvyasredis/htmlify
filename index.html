@@ -134,50 +134,14 @@
 
 <section class="hero">
   <h1>Ask Claude for an HTML artifact <em>that's actually worth reading.</em></h1>
-  <p>A library of twenty prompts that ask Claude to produce single-file HTML artifacts instead of walls of markdown. Each prompt names the structural primitives (annotated diffs, side-by-side grids, draggable cards, live demos) and includes an export button that closes the loop back to text. Pair this page with a Claude Project that has the Redis design system in its knowledge — the design context lives there, so the prompts stay short and reusable.</p>
-  <div class="hero__actions">
-    <a class="btn btn--primary" href="#library">Browse the library</a>
-    <a class="btn btn--secondary" href="#setup">Set up the project</a>
-  </div>
+  <p>A library of twenty prompts that ask Claude to produce single-file HTML artifacts instead of walls of markdown. Each prompt names the structural primitives (annotated diffs, side-by-side grids, draggable cards, live demos) and includes an export button that closes the loop back to text.</p>
 </section>
 
-<section class="section" id="setup">
-  <p class="section__eyebrow">Setup</p>
-  <h2>Two ways to use this</h2>
-  <p class="section__lede">Pick one. The first is cleaner and what these prompts assume; the second is the no-account-required fallback.</p>
 
-  <div class="setup-grid">
-    <div class="setup-card setup-card--featured">
-      <span class="setup-card__tag">Recommended</span>
-      <h3>Claude Project (paid plans)</h3>
-      <p>One-time setup. The design system lives in the project's knowledge base; every chat inside the project applies it automatically.</p>
-      <ol>
-        <li>Download the project bundle <code>redis-project-bundle.zip</code> from the post that accompanied this page.</li>
-        <li>In claude.ai, create a new Project ("Redis-styled HTML artifacts" or similar).</li>
-        <li>Upload <code>tokens.css</code>, <code>styles.css</code>, and the four reference HTMLs to project knowledge.</li>
-        <li>Paste the contents of <code>PROJECT-INSTRUCTIONS.txt</code> into the project's custom-instructions field.</li>
-        <li>Start a new chat inside the project. Copy any prompt below. Paste. Done.</li>
-      </ol>
-    </div>
-
-    <div class="setup-card">
-      <h3>Paste-a-preamble (free, or one-off chats)</h3>
-      <p>No project required. Paste the design preamble below into a fresh chat once at session start. Then paste any prompt from the library.</p>
-      <ol>
-        <li>Open a fresh Claude chat (no project needed).</li>
-        <li>Copy the preamble in the next section.</li>
-        <li>Paste it as your first message.</li>
-        <li>From the same chat, copy any prompt below and paste it as your next message.</li>
-      </ol>
-    </div>
-  </div>
-</section>
 
 <section class="section" id="preamble">
   <p class="section__eyebrow">Design preamble</p>
-  <h2>For non-project sessions</h2>
-  <p class="section__lede">Skip this section if you're using a Claude Project. Otherwise, this is the one-time message you paste at the start of a session so the prompts below produce Redis-styled output.</p>
-
+ 
   <div class="preamble">
     <div class="preamble__head">
       <h3>Paste this once at session start</h3>
