@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HTML prompt library · Redis design system</title>
+<meta name="description" content="A library of 20 prompts for asking Claude to produce single-file HTML artifacts, styled with the Redis design system." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --c-neutral-0: #ffffff; --c-neutral-50: #fafaf9; --c-neutral-100: #f8f8f8; --c-neutral-200: #e6e6e6; --c-neutral-300: #d1d3d4; --c-neutral-400: #bcbec0; --c-neutral-500: #a7a9ac; --c-neutral-600: #939598; --c-neutral-700: #6d6e71; --c-neutral-800: #58595b; --c-neutral-900: #414042; --c-neutral-950: #282828;
+    --c-primary-0: #eaf6ff; --c-primary-50: #afd7ff; --c-primary-100: #8cc4fc; --c-primary-200: #52a9ff; --c-primary-300: #0091ff; --c-primary-400: #0070f3; --c-primary-500: #0060d1; --c-primary-600: #064ea2; --c-primary-700: #0a4481; --c-primary-800: #0d3868; --c-primary-900: #0f3058; --c-primary-950: #10243e;
+    --c-secondary-0: #ffffff; --c-secondary-50: #fcfcfc; --c-secondary-100: #f3f3f3; --c-secondary-200: #e9e9e9; --c-secondary-300: #d9d9d9; --c-secondary-400: #b9c2c6; --c-secondary-500: #8a99a0; --c-secondary-600: #5c707a; --c-secondary-700: #2d4754; --c-secondary-800: #163341; --c-secondary-900: #0d212c; --c-secondary-950: #091a23;
+    --c-success-0: #f0fdf4; --c-success-200: #86efac; --c-success-500: #16a34a; --c-success-700: #166534; --c-success-800: #14532d;
+    --c-informative-0: #f0f9ff; --c-informative-100: #bae6fd; --c-informative-200: #7dd3fc; --c-informative-500: #0284c7; --c-informative-700: #075985; --c-informative-800: #0c4a6e;
+    --c-attention-0: #fff8e1; --c-attention-100: #fde68a; --c-attention-200: #facc15; --c-attention-700: #78350f;
+    --c-danger-0: #fff1f1; --c-danger-200: #fca5a5; --c-danger-500: #dc2626; --c-danger-700: #991b1b;
+    --font-family-regular: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --fw-normal: 400; --fw-semi-bold: 500; --fw-bold: 600;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-size: 62.5%; }
+  body { margin: 0; background: var(--c-secondary-50); color: var(--c-secondary-950); font-family: var(--font-family-regular); font-size: 1.4rem; line-height: 1.5; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  ::-webkit-scrollbar { width: 0.5rem; height: 0.5rem; background: var(--c-secondary-100); }
+  ::-webkit-scrollbar-thumb { background: var(--c-secondary-600); border-radius: 99rem; }
+  a { color: var(--c-primary-400); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--c-secondary-0); border-bottom: 1px solid var(--c-secondary-200); padding: 1.2rem 0; }
+  .topbar__inner { max-width: 92rem; margin: 0 auto; padding: 0 2.4rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+  .brand { font-weight: var(--fw-bold); font-size: 1.5rem; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 0.8rem; color: var(--c-secondary-950); }
+  .brand__dot { width: 0.8rem; height: 0.8rem; border-radius: 999px; background: var(--c-primary-400); }
+  .topbar nav { display: flex; gap: 1.6rem; font-size: 1.3rem; }
+  .topbar nav a { color: var(--c-secondary-700); font-weight: var(--fw-semi-bold); }
+  .topbar nav a:hover { color: var(--c-primary-400); text-decoration: none; }
+
+  .container { max-width: 92rem; margin: 0 auto; padding: 0 2.4rem; }
+
+  .hero { padding: 6.4rem 0 4rem; border-bottom: 1px solid var(--c-secondary-200); }
+  .hero__eyebrow { font-size: 1.2rem; font-weight: var(--fw-semi-bold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-primary-400); margin: 0 0 1.2rem; }
+  .hero h1 { font-size: 4rem; font-weight: var(--fw-bold); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 1.6rem; color: var(--c-secondary-950); }
+  .hero h1 em { font-style: normal; color: var(--c-primary-400); }
+  .hero p { font-size: 1.7rem; line-height: 1.55; color: var(--c-secondary-700); margin: 0 0 2.4rem; max-width: 70rem; }
+  .hero__actions { display: flex; flex-wrap: wrap; gap: 1.2rem; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; font-family: var(--font-family-regular); font-size: 1.4rem; font-weight: var(--fw-semi-bold); line-height: 1; border: 1px solid transparent; border-radius: 0.5rem; padding: 0 1.6rem; height: 3.6rem; cursor: pointer; user-select: none; white-space: nowrap; transition: background-color 60ms ease, border-color 60ms ease, color 60ms ease; text-decoration: none; }
+  .btn--primary { background: var(--c-primary-400); border-color: var(--c-primary-400); color: var(--c-secondary-0); }
+  .btn--primary:hover { background: var(--c-primary-500); border-color: var(--c-primary-600); text-decoration: none; }
+  .btn--primary:active { background: var(--c-primary-600); border-color: var(--c-primary-800); }
+  .btn--secondary { background: var(--c-secondary-100); border-color: var(--c-secondary-300); color: var(--c-secondary-950); }
+  .btn--secondary:hover { background: var(--c-secondary-200); text-decoration: none; }
+  .btn--small { height: 3rem; padding: 0 1.2rem; font-size: 1.3rem; border-radius: 0.4rem; }
+
+  .section { padding: 4.8rem 0; border-bottom: 1px solid var(--c-secondary-200); }
+  .section__eyebrow { font-size: 1.1rem; font-weight: var(--fw-semi-bold); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-secondary-500); margin: 0 0 1rem; }
+  .section h2 { font-size: 2.4rem; font-weight: var(--fw-bold); margin: 0 0 1rem; letter-spacing: -0.015em; color: var(--c-secondary-950); }
+  .section__lede { font-size: 1.5rem; color: var(--c-secondary-700); margin: 0 0 3.2rem; max-width: 70rem; line-height: 1.55; }
+
+  .setup-grid { display: grid; grid-template-columns: 1fr; gap: 1.6rem; }
+  @media (min-width: 720px) { .setup-grid { grid-template-columns: 1fr 1fr; } }
+  .setup-card { background: var(--c-secondary-0); border: 1px solid var(--c-secondary-200); border-radius: 0.8rem; padding: 2.4rem; }
+  .setup-card--featured { border-color: var(--c-primary-200); background: var(--c-primary-0); }
+  .setup-card__tag { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; height: 1.8rem; font-size: 1.1rem; line-height: 1; border-radius: 2px; background: var(--c-primary-400); color: #fff; font-weight: var(--fw-semi-bold); letter-spacing: 0.02em; margin: 0 0 1rem; }
+  .setup-card h3 { font-size: 1.8rem; font-weight: var(--fw-semi-bold); margin: 0 0 0.8rem; color: var(--c-secondary-950); }
+  .setup-card p { font-size: 1.4rem; color: var(--c-secondary-700); margin: 0 0 1.6rem; line-height: 1.55; }
+  .setup-card ol { margin: 0 0 1.6rem; padding-left: 2rem; font-size: 1.4rem; color: var(--c-secondary-700); line-height: 1.7; }
+  .setup-card ol li { margin: 0 0 0.4rem; }
+  .setup-card code { font-family: var(--font-family-mono); font-size: 1.2rem; padding: 0.1rem 0.4rem; background: var(--c-secondary-100); border-radius: 2px; color: var(--c-secondary-800); }
+
+  .preamble { background: var(--c-secondary-0); border: 1px solid var(--c-secondary-200); border-radius: 0.8rem; padding: 2rem; }
+  .preamble__head { display: flex; align-items: center; justify-content: space-between; gap: 1.6rem; margin: 0 0 1.2rem; }
+  .preamble__head h3 { font-size: 1.6rem; font-weight: var(--fw-semi-bold); margin: 0; color: var(--c-secondary-950); }
+  .preamble__body { background: var(--c-secondary-50); border: 1px solid var(--c-secondary-200); border-radius: 0.4rem; padding: 1.6rem; font-family: var(--font-family-mono); font-size: 1.3rem; line-height: 1.6; color: var(--c-secondary-800); white-space: pre-wrap; }
+
+  .cat-nav { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 0 0 3.2rem; padding: 1.6rem 0; border-top: 1px solid var(--c-secondary-200); border-bottom: 1px solid var(--c-secondary-200); position: sticky; top: 4.7rem; background: var(--c-secondary-50); z-index: 5; }
+  .cat-nav a { font-size: 1.3rem; font-weight: var(--fw-semi-bold); padding: 0.6rem 1.2rem; background: var(--c-secondary-0); border: 1px solid var(--c-secondary-200); border-radius: 0.4rem; color: var(--c-secondary-700); }
+  .cat-nav a:hover { background: var(--c-primary-0); border-color: var(--c-primary-100); color: var(--c-primary-600); text-decoration: none; }
+
+  .category { padding: 3.2rem 0 1.6rem; }
+  .category__header { display: flex; align-items: baseline; gap: 1.2rem; margin: 0 0 2.4rem; padding: 0 0 1.2rem; border-bottom: 1px solid var(--c-secondary-200); }
+  .category__header h2 { font-size: 2rem; font-weight: var(--fw-semi-bold); margin: 0; letter-spacing: -0.01em; color: var(--c-secondary-950); }
+  .category__count { font-size: 1.2rem; padding: 0.2rem 0.8rem; border-radius: 2px; background: var(--c-secondary-100); color: var(--c-secondary-600); font-family: var(--font-family-mono); }
+
+  .prompt { background: var(--c-secondary-0); border: 1px solid var(--c-secondary-200); border-radius: 0.8rem; padding: 2rem; margin: 0 0 1.6rem; }
+  .prompt__head { margin: 0 0 1.2rem; }
+  .prompt__num { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; height: 1.8rem; font-size: 1.1rem; font-family: var(--font-family-mono); line-height: 1; border-radius: 2px; background: var(--c-informative-0); color: var(--c-informative-700); border: 1px solid var(--c-informative-100); margin-right: 0.8rem; vertical-align: 2px; }
+  .prompt__title { display: inline; font-size: 1.7rem; font-weight: var(--fw-semi-bold); color: var(--c-secondary-950); margin: 0; letter-spacing: -0.005em; }
+  .prompt__desc { font-size: 1.4rem; color: var(--c-secondary-700); margin: 0.8rem 0 0.6rem; line-height: 1.55; }
+  .prompt__prims { font-size: 1.2rem; color: var(--c-secondary-500); margin: 0 0 1.6rem; line-height: 1.7; }
+  .prompt__prims code { font-family: var(--font-family-mono); font-size: 1.1rem; padding: 0.2rem 0.6rem; background: var(--c-secondary-100); border: 1px solid var(--c-secondary-200); border-radius: 2px; color: var(--c-secondary-700); }
+  .prompt__fields { display: flex; flex-direction: column; gap: 1rem; margin: 0 0 1.6rem; }
+  .field label { display: block; font-size: 1.2rem; color: var(--c-secondary-600); font-weight: var(--fw-semi-bold); margin: 0 0 0.4rem; }
+  .field input, .field textarea { width: 100%; padding: 0 1rem; height: 3.6rem; border: 1px solid var(--c-secondary-400); border-radius: 0.4rem; background: var(--c-secondary-0); color: var(--c-secondary-950); font: 400 1.4rem/1.4 var(--font-family-regular); outline: none; transition: border-color 120ms ease; }
+  .field textarea { height: auto; min-height: 7rem; padding: 0.8rem 1rem; resize: vertical; }
+  .field input:focus, .field textarea:focus { border-color: var(--c-primary-400); }
+  .field--inline { display: flex; align-items: center; gap: 1.2rem; }
+  .field--inline label { margin: 0; }
+  .field--inline input { width: 8rem; }
+
+  .preview { background: var(--c-secondary-50); border: 1px solid var(--c-secondary-200); border-radius: 0.4rem; padding: 1.4rem 1.6rem; font-family: var(--font-family-mono); font-size: 1.25rem; line-height: 1.6; color: var(--c-secondary-900); white-space: pre-wrap; margin: 0 0 1.2rem; }
+
+  .prompt__actions { display: flex; align-items: center; gap: 1.2rem; }
+  .copied { font-size: 1.2rem; color: var(--c-success-700); font-weight: var(--fw-semi-bold); opacity: 0; transition: opacity 200ms ease; }
+  .copied.is-shown { opacity: 1; }
+
+  .warn { background: var(--c-attention-0); border: 1px solid var(--c-attention-100); border-radius: 0.8rem; padding: 2rem 2.4rem; margin: 3.2rem 0 0; }
+  .warn h3 { font-size: 1.5rem; font-weight: var(--fw-semi-bold); margin: 0 0 0.8rem; color: var(--c-attention-700); }
+  .warn p { font-size: 1.4rem; color: var(--c-attention-700); margin: 0; line-height: 1.6; }
+
+  footer { padding: 4rem 0 6rem; }
+  footer p { font-size: 1.2rem; color: var(--c-secondary-600); margin: 0; max-width: 70rem; line-height: 1.65; }
+  footer a { color: var(--c-secondary-700); font-weight: var(--fw-semi-bold); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <span class="brand"><span class="brand__dot"></span> HTML prompt library</span>
+    <nav>
+      <a href="#setup">Setup</a>
+      <a href="#preamble">Preamble</a>
+      <a href="#library">Library</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+
+<section class="hero">
+  <p class="hero__eyebrow">Redis design system · 20 patterns</p>
+  <h1>Ask Claude for an HTML artifact <em>that's actually worth reading.</em></h1>
+  <p>A library of twenty prompts that ask Claude to produce single-file HTML artifacts instead of walls of markdown. Each prompt names the structural primitives (annotated diffs, side-by-side grids, draggable cards, live demos) and includes an export button that closes the loop back to text. Pair this page with a Claude Project that has the Redis design system in its knowledge — the design context lives there, so the prompts stay short and reusable.</p>
+  <div class="hero__actions">
+    <a class="btn btn--primary" href="#library">Browse the library</a>
+    <a class="btn btn--secondary" href="#setup">Set up the project</a>
+  </div>
+</section>
+
+<section class="section" id="setup">
+  <p class="section__eyebrow">Setup</p>
+  <h2>Two ways to use this</h2>
+  <p class="section__lede">Pick one. The first is cleaner and what these prompts assume; the second is the no-account-required fallback.</p>
+
+  <div class="setup-grid">
+    <div class="setup-card setup-card--featured">
+      <span class="setup-card__tag">Recommended</span>
+      <h3>Claude Project (paid plans)</h3>
+      <p>One-time setup. The design system lives in the project's knowledge base; every chat inside the project applies it automatically.</p>
+      <ol>
+        <li>Download the project bundle <code>redis-project-bundle.zip</code> from the post that accompanied this page.</li>
+        <li>In claude.ai, create a new Project ("Redis-styled HTML artifacts" or similar).</li>
+        <li>Upload <code>tokens.css</code>, <code>styles.css</code>, and the four reference HTMLs to project knowledge.</li>
+        <li>Paste the contents of <code>PROJECT-INSTRUCTIONS.txt</code> into the project's custom-instructions field.</li>
+        <li>Start a new chat inside the project. Copy any prompt below. Paste. Done.</li>
+      </ol>
+    </div>
+
+    <div class="setup-card">
+      <h3>Paste-a-preamble (free, or one-off chats)</h3>
+      <p>No project required. Paste the design preamble below into a fresh chat once at session start. Then paste any prompt from the library.</p>
+      <ol>
+        <li>Open a fresh Claude chat (no project needed).</li>
+        <li>Copy the preamble in the next section.</li>
+        <li>Paste it as your first message.</li>
+        <li>From the same chat, copy any prompt below and paste it as your next message.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="preamble">
+  <p class="section__eyebrow">Design preamble</p>
+  <h2>For non-project sessions</h2>
+  <p class="section__lede">Skip this section if you're using a Claude Project. Otherwise, this is the one-time message you paste at the start of a session so the prompts below produce Redis-styled output.</p>
+
+  <div class="preamble">
+    <div class="preamble__head">
+      <h3>Paste this once at session start</h3>
+      <button class="btn btn--small btn--secondary" onclick="copyText('preamble-body', this)">Copy preamble <span class="copied" data-for="preamble-body">copied</span></button>
+    </div>
+    <div class="preamble__body" id="preamble-body">For HTML artifacts in this conversation, apply the Redis design system: Geist font for prose, Source Code Pro for code, primary blue #0070f3 for actions, slate text on white surfaces, 0.5rem button radii and 0.8rem card radii. Use BEM-ish component naming: .btn--primary, .btn--secondary-fill, .card, .badge--informative, .section-block, .input, .chip. Surface bg #ffffff, page bg #fcfcfc, borders #e9e9e9, muted text #5c707a. Reserve semantic variants (.badge--success / --attention / --notice / --danger) for actual semantic meaning, not decoration. Generate single-file artifacts with all CSS inline. When asked to produce a non-HTML response (chat answers, summaries), respond normally in markdown — Redis design applies to HTML artifacts only.</div>
+  </div>
+</section>
+
+<section class="section" id="library">
+  <p class="section__eyebrow">Library</p>
+  <h2>Twenty patterns, nine categories</h2>
+  <p class="section__lede">Fill in the fields — the prompt updates live. Hit copy and paste into a fresh Claude session. If you're not in a project, paste the preamble above first.</p>
+
+  <nav class="cat-nav" aria-label="Category jump links">
+    <a href="#cat-plan">Plan</a>
+    <a href="#cat-review">Code review</a>
+    <a href="#cat-design">Design</a>
+    <a href="#cat-proto">Prototype</a>
+    <a href="#cat-diag">Diagrams</a>
+    <a href="#cat-deck">Decks</a>
+    <a href="#cat-research">Research</a>
+    <a href="#cat-report">Reports</a>
+    <a href="#cat-editor">Editors</a>
+  </nav>
+
+  <div class="category" id="cat-plan">
+    <div class="category__header"><h2>Exploration &amp; planning</h2><span class="category__count">3 patterns</span></div>
+
+    <article class="prompt" data-template="I'm working on {{task}} and not sure which direction to take. Generate {{n}} distinctly different approaches — vary {{dimensions}}. Lay them out as a single HTML file in a grid so I can compare side by side. Label each with the tradeoff it's making and the one-line case for picking it.">
+      <div class="prompt__head"><span class="prompt__num">01</span><h3 class="prompt__title">Compare N options side by side</h3></div>
+      <p class="prompt__desc">You don't know what you want yet. Want options laid out so you can point at one.</p>
+      <p class="prompt__prims">Primitives: <code>grid layout</code> · <code>tradeoff labels</code> · <code>one-line pick case</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>What you're working on</label><input type="text" name="task" placeholder="the onboarding flow for new users" /></div>
+        <div class="field field--inline"><label>How many options</label><input type="text" name="n" value="6" /></div>
+        <div class="field"><label>Dimensions to vary</label><input type="text" name="dimensions" placeholder="layout, tone, and density" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Take {{option}} and expand it into a thorough implementation plan as a single HTML file. Include: milestones on a timeline, a data-flow SVG diagram, inline mockups of the key surfaces, the risky code I'll need to write up front, and a risk table with mitigations. This is the document I'd hand to whoever is going to build it.">
+      <div class="prompt__head"><span class="prompt__num">02</span><h3 class="prompt__title">Expand one option into a full plan</h3></div>
+      <p class="prompt__desc">You picked a direction. Now you want the handoff document for whoever builds it.</p>
+      <p class="prompt__prims">Primitives: <code>timeline</code> · <code>data-flow SVG</code> · <code>inline mockups</code> · <code>risky-code preview</code> · <code>risk table</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The option you picked</label><input type="text" name="option" placeholder="option 3, the progressive disclosure flow with three steps" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Sketch a clickable flow for {{journey}} as a single HTML file. {{n}} screens linked together with anchor navigation — enough fidelity to feel whether the interaction is right. Use a neutral aesthetic so I react to the interaction shape, not the polish.">
+      <div class="prompt__head"><span class="prompt__num">03</span><h3 class="prompt__title">Clickable flow mockup</h3></div>
+      <p class="prompt__desc">You want to feel the flow before committing. Low-fi clickable screens, not pixel-perfect mocks.</p>
+      <p class="prompt__prims">Primitives: <code>linked screens</code> · <code>anchor navigation</code> · <code>neutral low-fi aesthetic</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The user journey</label><input type="text" name="journey" placeholder="signing up and inviting a teammate" /></div>
+        <div class="field field--inline"><label>How many screens</label><input type="text" name="n" value="5" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-review">
+    <div class="category__header"><h2>Code review &amp; understanding</h2><span class="category__count">3 patterns</span></div>
+
+    <article class="prompt" data-template="Help me review this PR by creating an HTML artifact that describes it. I'm not familiar with {{unfamiliar}}, focus there. Render the actual diff with inline margin annotations, color-code findings by severity, add jump links to each finding, and end with a 'where to focus the review' callout. Push back on conclusions you're unsure about — don't dress weak findings as red dots.">
+      <div class="prompt__head"><span class="prompt__num">04</span><h3 class="prompt__title">Reviewing someone else's PR</h3></div>
+      <p class="prompt__desc">You're the reviewer. You want to find what matters, not scroll a wall of diff.</p>
+      <p class="prompt__prims">Primitives: <code>annotated diff</code> · <code>severity badges</code> · <code>jump links</code> · <code>focus callout</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The part you're least familiar with</label><input type="text" name="unfamiliar" placeholder="the streaming and backpressure logic" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="I'm opening a PR for {{what_changed}}. Create an HTML artifact for reviewers with: motivation (why this, why now), a before/after summary, a file-by-file tour explaining the *why* behind each change, and a 'where to focus the review' callout pointing reviewers at {{focus_area}}. Keep it scannable. Add a 'copy as PR description' button at the top that exports the prose sections as markdown ready to paste into GitHub.">
+      <div class="prompt__head"><span class="prompt__num">05</span><h3 class="prompt__title">Writing a PR description for reviewers</h3></div>
+      <p class="prompt__desc">You're the author. You want reviewers to understand the <em>why</em> in two minutes.</p>
+      <p class="prompt__prims">Primitives: <code>motivation</code> · <code>before/after</code> · <code>file-by-file tour</code> · <code>copy as markdown</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>What you changed</label><input type="text" name="what_changed" placeholder="adding retry-with-jitter to the upload pipeline" /></div>
+        <div class="field"><label>Where reviewers should focus</label><input type="text" name="focus_area" placeholder="the new backoff logic and whether the jitter bounds are right" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="I need to understand the {{module}} module in this codebase. Read the relevant code and produce a single HTML page with: a boxes-and-arrows SVG dependency diagram, the hot path highlighted in a different color, entry points listed with one-line descriptions, and a small glossary of terms in the margin. I'm trying to {{goal}}, optimize for that.">
+      <div class="prompt__head"><span class="prompt__num">06</span><h3 class="prompt__title">Understanding an unfamiliar module</h3></div>
+      <p class="prompt__desc">You're new to this code. You want the shape of it before poking.</p>
+      <p class="prompt__prims">Primitives: <code>SVG dependency map</code> · <code>highlighted hot path</code> · <code>entry-point list</code> · <code>glossary</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The module</label><input type="text" name="module" placeholder="the auth middleware in /server/auth" /></div>
+        <div class="field"><label>What you're trying to do</label><input type="text" name="goal" placeholder="add OAuth as a new provider without breaking session auth" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-design">
+    <div class="category__header"><h2>Design</h2><span class="category__count">2 patterns</span></div>
+
+    <article class="prompt" data-template="Read {{source}} and pull out the design tokens — colors, type scale, spacing, radii, shadows. Render them as a single HTML file: color swatches with hex values that copy on click, type scale shown at actual size with weights and line-heights, spacing as visual bars. Add a 'copy as JSON' button at the top that exports the full token set.">
+      <div class="prompt__head"><span class="prompt__num">07</span><h3 class="prompt__title">Living design system</h3></div>
+      <p class="prompt__desc">Pull the tokens out of a codebase and render them as a clickable reference.</p>
+      <p class="prompt__prims">Primitives: <code>color swatches</code> · <code>type scale at size</code> · <code>spacing bars</code> · <code>copy as JSON</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>Codebase or path to read</label><input type="text" name="source" placeholder="./src/styles and ./tailwind.config.ts" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Take the {{component}} component and lay out every size, state, and intent variant on a single HTML contact sheet. Group by category — sizes together, states together, intents together. Show hover and focus states for every interactive variant.">
+      <div class="prompt__head"><span class="prompt__num">08</span><h3 class="prompt__title">Component contact sheet</h3></div>
+      <p class="prompt__desc">Every variant of one component on one page for review.</p>
+      <p class="prompt__prims">Primitives: <code>grouped variant grid</code> · <code>hover + focus demo</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The component</label><input type="text" name="component" placeholder="our Button component" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-proto">
+    <div class="category__header"><h2>Prototyping</h2><span class="category__count">2 patterns</span></div>
+
+    <article class="prompt" data-template="I want to prototype {{interaction}}. Create a single HTML file with the actual element on the page, plus sliders for duration, easing curve, and {{extra}}. I should feel the change live as I drag. Show the resulting CSS or JS values in a code block that updates as I tune. Add a 'copy parameters' button that exports the final values.">
+      <div class="prompt__head"><span class="prompt__num">09</span><h3 class="prompt__title">Animation sandbox</h3></div>
+      <p class="prompt__desc">Motion can't be described. Tune it by feel, then export the values.</p>
+      <p class="prompt__prims">Primitives: <code>live element</code> · <code>sliders</code> · <code>live code block</code> · <code>copy parameters</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The interaction</label><input type="text" name="interaction" placeholder="a checkout button that plays an animation and turns purple" /></div>
+        <div class="field"><label>Extra tunable params</label><input type="text" name="extra" placeholder="color, scale, and overshoot" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="I'm designing {{flow}}. Build a single HTML file with {{n}} screens linked together — enough fidelity to feel transitions and tap targets. Add a small overlay that shows the current screen and a 'reset to start' button.">
+      <div class="prompt__head"><span class="prompt__num">10</span><h3 class="prompt__title">Clickable interaction flow</h3></div>
+      <p class="prompt__desc">A few screens linked together so you can feel the flow.</p>
+      <p class="prompt__prims">Primitives: <code>linked screens</code> · <code>screen indicator</code> · <code>reset button</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The flow</label><input type="text" name="flow" placeholder="the recovery flow when a payment fails" /></div>
+        <div class="field field--inline"><label>How many screens</label><input type="text" name="n" value="4" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-diag">
+    <div class="category__header"><h2>Illustrations &amp; diagrams</h2><span class="category__count">2 patterns</span></div>
+
+    <article class="prompt" data-template="I'm writing a post about {{topic}}. Generate the figures for it as inline SVG in a single HTML file — {{n}} diagrams, each illustrating one specific point. Stack them with captions. Use a consistent visual style. Add a 'copy this SVG' button per figure.">
+      <div class="prompt__head"><span class="prompt__num">11</span><h3 class="prompt__title">SVG figure sheet for a post</h3></div>
+      <p class="prompt__desc">A batch of diagrams for an article, copyable individually.</p>
+      <p class="prompt__prims">Primitives: <code>inline SVG</code> · <code>captions</code> · <code>per-figure copy buttons</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The post's topic</label><input type="text" name="topic" placeholder="how our retry logic handles partial failures" /></div>
+        <div class="field field--inline"><label>How many figures</label><input type="text" name="n" value="4" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Draw {{process}} as a flowchart in a single HTML file — boxes-and-arrows in SVG. Each step should be clickable, opening a side panel with details: what runs, expected timing, failure modes, and the relevant snippet. Highlight the happy path in one color and failure branches in another. Use two colors total, not a rainbow.">
+      <div class="prompt__head"><span class="prompt__num">12</span><h3 class="prompt__title">Annotated flowchart</h3></div>
+      <p class="prompt__desc">For a process where the shape matters and the details should be one click away.</p>
+      <p class="prompt__prims">Primitives: <code>SVG flowchart</code> · <code>clickable steps</code> · <code>side panel</code> · <code>two-color paths</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The process</label><input type="text" name="process" placeholder="our deploy pipeline from PR merge to production" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-deck">
+    <div class="category__header"><h2>Decks</h2><span class="category__count">1 pattern</span></div>
+
+    <article class="prompt" data-template="Turn {{source}} into a short slide deck — a single HTML file, one slide per <section> tag, twenty lines of JS for arrow-key navigation. {{n}} slides total. Each slide has a clear title, one main idea, and (where useful) one supporting visual. Don't over-style; this needs to be readable in a meeting on a laptop projector.">
+      <div class="prompt__head"><span class="prompt__num">13</span><h3 class="prompt__title">Arrow-key slide deck</h3></div>
+      <p class="prompt__desc">A Slack thread, doc, or set of notes turned into something you can present.</p>
+      <p class="prompt__prims">Primitives: <code>section-per-slide</code> · <code>arrow-key nav</code> · <code>one idea per slide</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>What to turn into a deck</label><textarea name="source" placeholder="the design doc at ./docs/auth-rewrite.md"></textarea></div>
+        <div class="field field--inline"><label>How many slides</label><input type="text" name="n" value="10" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-research">
+    <div class="category__header"><h2>Research &amp; learning</h2><span class="category__count">2 patterns</span></div>
+
+    <article class="prompt" data-template="I don't understand how {{feature}} actually works in this codebase. Read the relevant code and produce a single HTML page with: a TL;DR box at the top, collapsible sections for each step of the request path, tabbed config snippets for different environments, an SVG diagram of the data flow, and an FAQ at the bottom. Optimize for someone reading it once and never coming back.">
+      <div class="prompt__head"><span class="prompt__num">14</span><h3 class="prompt__title">Feature explainer (in a specific codebase)</h3></div>
+      <p class="prompt__desc">"How does X actually work <em>here</em>." The code is the source of truth.</p>
+      <p class="prompt__prims">Primitives: <code>TL;DR box</code> · <code>collapsible steps</code> · <code>tabbed configs</code> · <code>data-flow SVG</code> · <code>FAQ</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The feature</label><input type="text" name="feature" placeholder="rate limiting in our API gateway" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Teach me {{concept}} as a single HTML page. Include: a TL;DR up top, an interactive demo where I can change parameters and watch the behavior change (real JavaScript, not a screenshot), a comparison table against {{alternatives}}, and a glossary in the margin where hovering a term highlights its first mention in the text. Assume I'm technical but unfamiliar with this specific concept.">
+      <div class="prompt__head"><span class="prompt__num">15</span><h3 class="prompt__title">Concept explainer with live demo</h3></div>
+      <p class="prompt__desc">A topic, not a codebase. The live demo is what separates this from a Wikipedia article.</p>
+      <p class="prompt__prims">Primitives: <code>TL;DR</code> · <code>interactive JS demo</code> · <code>comparison table</code> · <code>margin glossary</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The concept</label><input type="text" name="concept" placeholder="consistent hashing" /></div>
+        <div class="field"><label>Alternatives to compare against</label><input type="text" name="alternatives" placeholder="modulo hashing and rendezvous hashing" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-report">
+    <div class="category__header"><h2>Reports</h2><span class="category__count">2 patterns</span></div>
+
+    <article class="prompt" data-template="Synthesize my week into a single HTML status report for {{audience}}. Sources to read: {{sources}}. Structure: what shipped (with links), what slipped (with reasons), a small chart or progress bar if there's quantifiable progress, what's coming next, and an 'asks' section if I need anything from the audience. Optimize for a 90-second skim on Monday morning.">
+      <div class="prompt__head"><span class="prompt__num">16</span><h3 class="prompt__title">Weekly status report</h3></div>
+      <p class="prompt__desc">Recurring update for a manager or team. The "asks" section is the hidden value.</p>
+      <p class="prompt__prims">Primitives: <code>shipped / slipped / next / asks</code> · <code>small chart</code> · <code>90-second skim</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>Audience</label><input type="text" name="audience" placeholder="my manager and the broader team" /></div>
+        <div class="field"><label>Sources to read</label><textarea name="sources" placeholder="my git history this week, my Linear tickets that moved, and the #my-team Slack channel"></textarea></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Build a post-mortem for {{incident}} as a single HTML file. Sources: {{sources}}. Include: a one-paragraph summary at the top, a minute-by-minute timeline with the key log excerpts inline, a 'what happened' section explaining the root cause, a 'why we didn't catch it sooner' section, and a follow-up checklist with owners and dates. Use a calm tone — blameless and factual.">
+      <div class="prompt__head"><span class="prompt__num">17</span><h3 class="prompt__title">Incident timeline post-mortem</h3></div>
+      <p class="prompt__desc">After an incident. The blameless framing is in the prompt for a reason.</p>
+      <p class="prompt__prims">Primitives: <code>timeline with logs</code> · <code>root cause</code> · <code>detection gap</code> · <code>follow-up with owners</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The incident</label><input type="text" name="incident" placeholder="the API latency spike on Tuesday" /></div>
+        <div class="field"><label>Sources</label><textarea name="sources" placeholder="the #incidents Slack channel, our PagerDuty timeline, and the relevant Grafana dashboards"></textarea></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <div class="category" id="cat-editor">
+    <div class="category__header"><h2>Custom editors</h2><span class="category__count">3 patterns</span></div>
+
+    <article class="prompt" data-template="I need to {{verb}} {{count}} {{items}}. Build me a single-file HTML editor: each item as a draggable card across {{buckets}}. Pre-sort by your best guess. Show the count per bucket at the top. Add a 'copy as markdown' button that exports the final ordering with a one-line rationale per bucket.">
+      <div class="prompt__head"><span class="prompt__num">18</span><h3 class="prompt__title">Drag-and-bucket triage</h3></div>
+      <p class="prompt__desc">Reordering or categorizing a batch of things. Pre-sort by best guess is the time-saver.</p>
+      <p class="prompt__prims">Primitives: <code>draggable cards</code> · <code>custom buckets</code> · <code>live counts</code> · <code>copy as markdown</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>Action verb</label><input type="text" name="verb" placeholder="reprioritize" /></div>
+        <div class="field field--inline"><label>How many</label><input type="text" name="count" value="30" /></div>
+        <div class="field"><label>The items</label><input type="text" name="items" placeholder="Linear tickets from the backlog" /></div>
+        <div class="field"><label>The buckets</label><input type="text" name="buckets" placeholder="Now / Next / Later / Cut" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="Here's our {{config_type}} config: {{source}}. Build a single-file HTML editor: group fields by area, show dependencies between fields (warn me if I enable something whose prerequisite is off), highlight changed values from the original, and add a 'copy diff' button that exports just the changed keys in the right format. Don't let me save an invalid configuration.">
+      <div class="prompt__head"><span class="prompt__num">19</span><h3 class="prompt__title">Structured config editor</h3></div>
+      <p class="prompt__desc">Feature flags, env vars, anything with constraints between fields.</p>
+      <p class="prompt__prims">Primitives: <code>grouped fields</code> · <code>dependency warnings</code> · <code>diff highlighting</code> · <code>copy diff only</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>Config type</label><input type="text" name="config_type" placeholder="feature flag" /></div>
+        <div class="field"><label>The config (path or paste)</label><textarea name="source" placeholder="./config/flags.yaml"></textarea></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+
+    <article class="prompt" data-template="I'm tuning this prompt: {{prompt}}. Build a single-file HTML editor with the prompt on the left (variable slots highlighted), {{n}} sample inputs on the right that re-render the filled template live as I edit. Add a character and token counter and a 'copy' button. If I shorten the prompt, show me a diff against the original underneath.">
+      <div class="prompt__head"><span class="prompt__num">20</span><h3 class="prompt__title">Prompt tuner with live preview</h3></div>
+      <p class="prompt__desc">Iterating on a prompt with sample inputs. The diff keeps you from drifting too far.</p>
+      <p class="prompt__prims">Primitives: <code>side-by-side edit</code> · <code>live-rendering samples</code> · <code>token counter</code> · <code>diff from original</code></p>
+      <div class="prompt__fields">
+        <div class="field"><label>The prompt</label><textarea name="prompt" placeholder="paste the prompt you're tuning"></textarea></div>
+        <div class="field field--inline"><label>How many sample inputs</label><input type="text" name="n" value="3" /></div>
+      </div>
+      <div class="preview"></div>
+      <div class="prompt__actions"><button class="btn btn--small btn--primary" onclick="copyPrompt(this)">Copy prompt</button><span class="copied">copied</span></div>
+    </article>
+  </div>
+
+  <aside class="warn">
+    <h3>The honest check</h3>
+    <p>Polished Redis-styled output can make shaky model judgments look authoritative — color-coded severity, neat diagrams, confident headings. After each generated artifact, ask: did the format help me reason about the content, or did it make me trust the answer more than it deserves? If the latter, ask Claude for the same thing as plain markdown and see if the conclusions still hold.</p>
+  </aside>
+</section>
+
+<footer class="container">
+  <p>Built on top of the technique described in Thariq Shihipar's "The unreasonable effectiveness of HTML." Restyled with the Redis design system (themeLight2). The prompts are short by design: they assume the design context lives in your Claude Project, not in each prompt. Swap the preamble out for a different design system if you want — the pattern is portable.</p>
+</footer>
+
+</div>
+
+<script>
+function updatePreview(article) {
+  const template = article.getAttribute('data-template');
+  const inputs = article.querySelectorAll('input, textarea');
+  let output = template;
+  inputs.forEach(inp => {
+    const key = inp.name;
+    const val = (inp.value || inp.placeholder || ('{' + key + '}')).trim();
+    output = output.split('{{' + key + '}}').join(val);
+  });
+  article.querySelector('.preview').textContent = output;
+}
+function copyPrompt(btn) {
+  const article = btn.closest('.prompt');
+  const text = article.querySelector('.preview').textContent;
+  navigator.clipboard.writeText(text);
+  const indicator = article.querySelector('.prompt__actions .copied');
+  indicator.classList.add('is-shown');
+  setTimeout(() => indicator.classList.remove('is-shown'), 1500);
+}
+function copyText(id, btn) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent);
+  const indicator = btn.querySelector('.copied');
+  if (indicator) {
+    indicator.classList.add('is-shown');
+    setTimeout(() => indicator.classList.remove('is-shown'), 1500);
+  }
+}
+document.querySelectorAll('.prompt').forEach(article => {
+  article.querySelectorAll('input, textarea').forEach(inp => {
+    inp.addEventListener('input', () => updatePreview(article));
+  });
+  updatePreview(article);
+});
+</script>
+</body>
+</html>
